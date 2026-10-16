@@ -1,5 +1,6 @@
 package com.esteban.ReservasApplication.repository;
 
-public class ClientRepository {
-    
-}
+import com.esteban.ReservasApplication.model.Client;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ClientRepository extends JpaRepository<Client, Long> {}

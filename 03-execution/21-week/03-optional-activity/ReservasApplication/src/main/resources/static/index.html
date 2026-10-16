@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reservas</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 10px; }
+    form { display: grid; gap: 6px; margin-bottom: 10px; }
+    input, select, button { padding: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    #mensaje { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Reservas de citas</h1>
+  <p id="mensaje"></p>
+
+  <h2>Clientes</h2>
+  <form id="formCliente">
+    <select id="typeDocument">
+      <option value="CC">CC</option>
+      <option value="TI">TI</option>
+      <option value="CE">CE</option>
+    </select>
+    <input id="document" placeholder="Documento" required>
+    <input id="name" placeholder="Nombre" required>
+    <input id="address" placeholder="Dirección">
+    <input id="phone" placeholder="Teléfono">
+    <input id="email" type="email" placeholder="Correo">
+    <button type="submit">Guardar cliente</button>
+  </form>
+  <table>
+    <thead><tr><th>ID</th><th>Documento</th><th>Nombre</th><th>Teléfono</th><th>Correo</th></tr></thead>
+    <tbody id="tablaClientes"></tbody>
+  </table>
+
+  <h2>Reservas</h2>
+  <form id="formReserva">
+    <input id="resName" placeholder="Nombre de la reserva" required>
+    <input id="resDescription" placeholder="Descripción">
+    <select id="resClient" required></select>
+    <button type="submit">Guardar reserva</button>
+  </form>
+  <table>
+    <thead><tr><th>ID</th><th>Reserva</th><th>Descripción</th><th>Cliente</th></tr></thead>
+    <tbody id="tablaReservas"></tbody>
+  </table>
+
+  <script>
+    const API = "/api";
+    const mensaje = document.getElementById("mensaje");
+
+    async function cargarClientes() {
+      const clientes = await (await fetch(API + "/clients")).json();
+      document.getElementById("tablaClientes").innerHTML = clientes.map(c =>
+        `<tr><td>${c.id}</td><td>${c.typeDocument} ${c.document}</td><td>${c.name}</td><td>${c.phone ?? ""}</td><td>${c.email ?? ""}</td></tr>`
+      ).join("");
+      document.getElementById("resClient").innerHTML = clientes.map(c =>
+        `<option value="${c.id}">${c.name}</option>`
+      ).join("");
+    }
+
+    async function cargarReservas() {
+      const reservas = await (await fetch(API + "/reservations")).json();
+      document.getElementById("tablaReservas").innerHTML = reservas.map(r =>
+        `<tr><td>${r.id}</td><td>${r.name}</td><td>${r.description ?? ""}</td><td>${r.client ? r.client.name : ""}</td></tr>`
+      ).join("");
+    }
+
+    document.getElementById("formCliente").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const cliente = {
+        typeDocument: document.getElementById("typeDocument").value,
+        document: document.getElementById("document").value,
+        name: document.getElementById("name").value,
+        address: document.getElementById("address").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value
+      };
+      await fetch(API + "/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cliente)
+      });
+      e.target.reset();
+      cargarClientes();
+    });
+
+    document.getElementById("formReserva").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      mensaje.textContent = "";
+      const reserva = {
+        name: document.getElementById("resName").value,
+        description: document.getElementById("resDescription").value,
+        client: { id: Number(document.getElementById("resClient").value) }
+      };
+      const resp = await fetch(API + "/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reserva)
+      });
+      if (!resp.ok) {
+        mensaje.textContent = await resp.text();
+        return;
+      }
+      e.target.reset();
+      cargarReservas();
+    });
+
+    cargarClientes();
+    cargarReservas();
+  </script>
+</body>
+</html>
